@@ -14,5 +14,11 @@ CHIP Or {
     OUT out;
 
     PARTS:
-    // Put your code here:
+    /* "Or" is "Either A or B", which is equivalent to
+       "Neither notA nor notB" by De Morgan's law, which is equivalent to
+       "Nand(notA, notB)."
+    */
+    Not(in=a, out=notA);
+    Not(in=b, out=notB);
+    Nand(a=notA, b=notB, out=out);
 }

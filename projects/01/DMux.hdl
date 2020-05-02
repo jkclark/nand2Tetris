@@ -14,5 +14,10 @@ CHIP DMux {
     OUT a, b;
 
     PARTS:
-    // Put your code here:
+    /* If you create a truth table, you can see that the output for 'a' boils down to:
+       And(in, Not(sel)). You can see that the output for 'b' boils down to: And(in, sel).
+    */
+    Not(in=sel, out=notSel);
+    And(a=in, b=notSel, out=a);
+    And(a=in, b=sel, out=b);
 }
