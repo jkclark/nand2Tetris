@@ -18,5 +18,10 @@ CHIP Mux8Way16 {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    /* We can use the same principle from Mux4Way16 to choose between 8 inputs. The most significant bit
+       can differentiate between the 'first' 4 and the 'last' 4 inputs.
+    */
+    Mux4Way16(a=a, b=b, c=c, d=d, sel[0]=sel[0], sel[1]=sel[1], out=mux1out);
+    Mux4Way16(a=e, b=f, c=g, d=h, sel[0]=sel[0], sel[1]=sel[1], out=mux2out);
+    Mux16(a=mux1out, b=mux2out, sel=sel[2], out=out);
 }
