@@ -13,5 +13,41 @@ CHIP FullAdder {
         carry;   // Left bit of a + b + c
 
     PARTS:
-    // Put you code here:
+    /* Figuring this out was a very cool and rewarding process.
+       My first step was realizing that we were going to need two half adders. At the very least,
+       we're going to be adding two of the three numbers together, and then adding the sum of that
+       operation to the third number, just like you would if you were to do it on paper.
+
+       At that point, I got stuck. I decided that my next step would be to write out a table of every
+       combination of a, b, and c, the corresponding values of the intermediate wires, and the expected
+       values of the two output wires. When you write it out, it looks like this:
+
+       <table of values here>
+
+       At this point, I tried to look for ways that I could go from values on the left side of the table,
+       possibly modified by functions we have previously implemented (e.g., not, and, or, etc.), to values
+       on the right side of the table. In this process, I realized two things:
+
+       - The sum bit of our to-be-implemented chip will only be 1 if either c or the sum of a + b is 1, not both.
+           - This makes sense because if they're both 0, then either 0 or 2 of our 3 input bits were 1, which results in a 0 sum bit.
+           - If they're both 1, then only one of (a, b) is one, and c is 1, meaning we have 2 ones --> sum bit = 0
+         You can see this same XOR function in our implementation of a half adder. Pretty cool.
+
+       - The carry bit of our to-be-implemented chip will only be 1 if either the carry bit of our first half adder is 1,
+         or if both c and the sum of our first half adder are 1.
+           - This makes sense because if the carry of our first operation is 1, the minimum value our full adder
+           will represent is two. The carry must be 1.
+           - If BOTH c and the sum of our first half adder are 1, our full adder must represent the number 3,
+           which also requires a 1 in the carry bit.
+
+       Having realized these things, we can represent the values of our output bits like this:
+       Sum(a, b, c) = Xor(c, s0) *(make sure s0 is the sum output bit of first half adder)*
+       Carry(a, b, c) = Or(c0, And(c, s0)) *(make sure c0 is the carry output bit of first half adder)*
+
+       Now we've represented the full adder in terms of chips we've already built!
+    */
+
+    HalfAdder(a=a, b=b, sum=s0, carry=c0);
+    HalfAdder(a=s0, b=c, sum=sum, carry=c1);
+    Or(a=c0, b=c1, out=carry);
 }
