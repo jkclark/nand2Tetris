@@ -7,7 +7,7 @@
  * The ALU (Arithmetic Logic Unit).
  * Computes one of the following functions:
  * x+y, x-y, y-x, 0, 1, -1, x, y, -x, -y, !x, !y,
- * x+1, y+1, x-1, y-1, x&y, x|y on two 16-bit inputs, 
+ * x+1, y+1, x-1, y-1, x&y, x|y on two 16-bit inputs,
  * according to 6 input bits denoted zx,nx,zy,ny,f,no.
  * In addition, the ALU computes two 1-bit outputs:
  * if the ALU output == 0, zr is set to 1; otherwise zr is set to 0;
@@ -36,19 +36,42 @@ CHIP ALU {
         f,  // compute out = x + y (if 1) or x & y (if 0)
         no; // negate the out output?
 
-    OUT 
+    OUT
         out[16], // 16-bit output
         zr, // 1 if (out == 0), 0 otherwise
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-    // Do zx
-    Not16(in=zx, out=zxNot);
-	And16(a=x, b=zxNot, out=xPostZx);
+    // Do zx: And(x, Not(zx))
+    Mux16(a=x, b=false, sel=zx, out=xPostZx);
 
-	// Do nx
+    // Do nx
+    Not16(in=xPostZx, out=notXPostZx);
+    Mux16(a=xPostZx, b=notXPostZx, sel=nx, out=xProcessed);
 
-	// Do zy
-    Not16(in=zy, out=zyNot);
-	And16(a=x, b=zyNot, out=xPostZy);
+    // Do zy
+    Mux16(a=y, b=false, sel=zy, out=yPostZy);
+
+    // Do ny
+    Not16(in=yPostZy, out=notYPostZy);
+    Mux16(a=yPostZy, b=notYPostZy, sel=ny, out=yProcessed);
+
+    // Do f: Or(And(Add(x, y), f), And(And(x, y), Not(f)))
+    Add16(a=xProcessed, b=yProcessed, out=xyAdded);
+    And16(a=xProcessed, b=yProcessed, out=xyAnded);
+    Mux16(a=xyAnded, b=xyAdded, sel=f, out=fProcessed);
+
+    // Do no: (same as zx)
+    Not16(in=fProcessed, out=negFProcessed);
+    Mux16(a=fProcessed, b=negFProcessed, sel=no, out[0..7]=outLSHalf, out[8..15]=outMSHalf, out[15]=outMSB, out=out);
+
+    // Do zr: Not(Or(Or8Way(out[0..7]), Or8Way(out[8..15])))
+    Or8Way(in=outMSHalf, out=outMSHOr);
+    Or8Way(in=outLSHalf, out=outLSHOr);
+    Or(a=outMSHOr, b=outLSHOr, out=outOr);
+    Not(in=outOr, out=zr);
+
+    // Do ng: = (MSB == 1) = Not(Not(MSB))
+    Not(in=outMSB, out=notOutMSB);
+    Not(in=notOutMSB, out=ng);
 }
