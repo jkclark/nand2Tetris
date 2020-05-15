@@ -27,8 +27,8 @@
 // if (out < 0) set ng = 1
 
 CHIP ALU {
-    IN  
-        x[16], y[16],  // 16-bit inputs        
+    IN
+        x[16], y[16],  // 16-bit inputs
         zx, // zero the x input?
         nx, // negate the x input?
         zy, // zero the y input?
@@ -42,5 +42,13 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-	And16(a=x, b[0..15]=false, out=xZero);
+    // Do zx
+    Not16(in=zx, out=zxNot);
+	And16(a=x, b=zxNot, out=xPostZx);
+
+	// Do nx
+
+	// Do zy
+    Not16(in=zy, out=zyNot);
+	And16(a=x, b=zyNot, out=xPostZy);
 }
