@@ -41,5 +41,43 @@ CHIP ALU {
         ng;      // if (out < 0)  equals 1, else 0
 
     PARTS:
-    //// Replace this comment with your code.
+    // Zero x/y if necessary
+    Mux16(a=x, b=false, sel=zx, out=xAfterZx);
+    Mux16(a=y, b=false, sel=zy, out=yAfterZy);
+
+    // Prepare bitwise NOT for (potentially zeroed) x/y
+    Not16(in=xAfterZx, out=notXAfterZx);
+    Not16(in=yAfterZy, out=notYAfterZy);
+
+    // Bitwise NOT x/y
+    Mux16(a=xAfterZx, b=notXAfterZx, sel=nx, out=xAfterNx);
+    Mux16(a=yAfterZy, b=notYAfterZy, sel=ny, out=yAfterNy);
+
+    // Prepare +/& output
+    Add16(a=xAfterNx, b=yAfterNy, out=addedXY);
+    And16(a=xAfterNx, b=yAfterNy, out=andedXY);
+
+    // Select +/& output
+    Mux16(a=andedXY, b=addedXY, sel=f, out=preResult);
+
+    // Prepare bitwise NOT for result
+    Not16(in=preResult, out=notResult);
+
+    // Bitwise NOT result
+    Mux16(
+        a=preResult,
+        b=notResult,
+        sel=no,
+        out=out,
+        out[0..7]=finalResultHalf1,
+        out[8..15]=finalResultHalf2,
+        out[15]=ng  // Handle ng here
+    );
+
+
+    // zr
+    Or8Way(in=finalResultHalf1, out=halfOr1);
+    Or8Way(in=finalResultHalf2, out=halfOr2);
+    Or(a=halfOr1, b=halfOr2, out=orFinalResult);
+    Not(in=orFinalResult, out=zr);
 }
