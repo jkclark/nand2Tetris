@@ -25,5 +25,43 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-	//// Replace this comment with your code.
+    
+    // NOTES:
+    // Somehow I have gone through this course not knowing that 0 is the
+    // LEAST significant bit and 14 is the MOST significant bit of a 15-bit
+    // number. This resulted in ~15 mins of confusion. Now I know...
+
+    DMux(
+        in=load,
+        sel=address[14],
+        a=loadRAM,
+        b=loadScrnKbd
+    );
+    RAM16K(in=in, load=loadRAM, address=address[0..13], out=ramOut);
+
+    DMux(
+        in=load,
+        sel=address[13],
+        a=dMuxOutScrn,
+        b=dMuxOutKbd
+    );
+    And(a=address[14], b=dMuxOutScrn, out=loadScrn);
+    Screen(in=in, load=loadScrn, address=address[0..12], out=scrnOut);
+    Keyboard(out=kbdOut);
+
+    // Choose btwn screen and keyboard
+    Mux16(
+        a=scrnOut,
+        b=kbdOut,
+        sel=address[13],
+        out=scrnOrKbdOut
+    );
+
+    // Choose btwn RAM and (screen or keyboard)
+    Mux16(
+        a=ramOut,
+        b=scrnOrKbdOut,
+        sel=address[14],
+        out=out
+    );
 }
