@@ -32,5 +32,81 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-	//// Replace this comment with your code.
+    // Things we have to do:
+    // - Decode the instruction into control bits
+    // - Pass the correct values to the ALU
+    // - Correctly set the PC
+    // -- jump bits
+    // -- reset
+
+
+    // ** Decode the instruction ** //
+    // Is this an A instruction?
+    Not(in=instruction[15], out=notIBit);
+    And(a=notIBit, b=true, out=isAInstruction);
+    
+    // A and C bits
+    Or(a=instruction[12], b=false, out=aBit);
+    Or(a=instruction[11], b=false, out=c1Bit);
+    Or(a=instruction[10], b=false, out=c2Bit);
+    Or(a=instruction[9],  b=false, out=c3Bit);
+    Or(a=instruction[8],  b=false, out=c4Bit);
+    Or(a=instruction[7],  b=false, out=c5Bit);
+    Or(a=instruction[6],  b=false, out=c6Bit);
+
+    // D bits
+    Or(a=instruction[5], b=false, out=aDBit);
+    Or(a=instruction[4], b=false, out=dDBit);
+    Or(a=instruction[3], b=false, out=mDBit, out=writeM); // Handle writeM
+    
+    // J bits
+    Or(a=instruction[2], b=false, out=j1Bit);
+    Or(a=instruction[1], b=false, out=j2Bit);
+    Or(a=instruction[0], b=false, out=j3Bit);
+
+    // ** Handle A/M ** //
+    Mux16(a=aluOut, b[15]=false, b[0..14]=instruction[0..14], sel=isAInstruction, out=preAOut);
+
+    Or(a=isAInstruction, b=aDBit, out=shouldLoadA);
+    ARegister(in=preAOut, load=shouldLoadA, out=aOut, out[0..14]=addressM); // Handle addressM
+
+    Mux16(a=aOut, b=inM, sel=aBit, out=aOrMOut);
+
+    // ** Handle D ** //
+    DRegister(in=aluOut, load=dDBit, out=dOut);
+
+    // ** ALU ** //
+    ALU(
+        x=dOut,
+        y=aOrMOut,
+        zx=c1Bit,
+        nx=c2Bit,
+        zy=c3Bit,
+        ny=c4Bit,
+        f=c5Bit,
+        no=c6Bit,
+        out=aluOut,
+        out=outM, // Handle outM
+        zr=aluZROut,
+        ng=aluNGOut
+    );
+
+    // ** Handle next instruction ** //
+    // Jump if less than 0?
+    And(a=j1Bit, b=aluNGOut, out=shouldJumpNegative);
+
+    // Jump if equal to 0?
+    And(a=j2Bit, b=aluZROut, out=shouldJumpEqZero);
+
+    // Jump if greater than 0?
+    Not(in=aluNGOut, out=notNegative);
+    Not(in=aluZROut, out=notZero);
+    And(a=notNegative, b=notZero, out=isPositive);
+    And(a=j3Bit, b=isPositive, out=shouldJumpPositive);
+
+    // Combine jump flags
+    Or(a=shouldJumpNegative, b=shouldJumpEqZero, out=shouldJumpNonPos);
+    Or(a=shouldJumpNonPos, b=shouldJumpPositive, out=shouldJump);
+
+    PC(in=aOut, inc=true, load=shouldJump, reset=reset, out[0..14]=pc); // Handle pc
 }
