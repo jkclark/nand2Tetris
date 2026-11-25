@@ -57,7 +57,10 @@ CHIP CPU {
     // D bits
     Or(a=instruction[5], b=false, out=aDBit);
     Or(a=instruction[4], b=false, out=dDBit);
-    Or(a=instruction[3], b=false, out=mDBit, out=writeM); // Handle writeM
+    Or(a=instruction[3], b=false, out=mDBit);
+
+    // Handle writeM (only if mDBit && not an A instruction)
+    And(a=mDBit, b=instruction[15], out=writeM);
     
     // J bits
     Or(a=instruction[2], b=false, out=j1Bit);
@@ -106,7 +109,9 @@ CHIP CPU {
 
     // Combine jump flags
     Or(a=shouldJumpNegative, b=shouldJumpEqZero, out=shouldJumpNonPos);
-    Or(a=shouldJumpNonPos, b=shouldJumpPositive, out=shouldJump);
+    Or(a=shouldJumpNonPos, b=shouldJumpPositive, out=shouldJumpFlags);
+    // Only jump if C instruction
+    And(a=shouldJumpFlags, b=instruction[15], out=shouldJump);
 
     PC(in=aOut, inc=true, load=shouldJump, reset=reset, out[0..14]=pc); // Handle pc
 }
